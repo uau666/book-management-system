@@ -1,14 +1,15 @@
 const express = require('express');
 const { Vika } = require('@vikadata/vika');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // 中间件
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); // 提供静态文件服务
+app.use(express.static(path.join(__dirname)));
 
 // 初始化 Vika SDK
 const vika = new Vika({ 
@@ -148,6 +149,11 @@ app.put('/api/books/:recordId', async (req, res) => {
             message: '服务器错误'
         });
     }
+});
+
+// 添加根路由处理
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(port, () => {
