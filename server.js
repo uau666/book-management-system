@@ -11,6 +11,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+// 添加请求时间记录中间件
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`${req.method} ${req.url} - ${duration}ms`);
+    });
+    next();
+});
+
 // 初始化 Vika SDK
 const vika = new Vika({ 
     token: process.env.VIKA_TOKEN || "uskFocCBUtljNHeAX5AOhRU", 
@@ -20,20 +30,43 @@ const vika = new Vika({
 // 指定数据表
 const datasheet = vika.datasheet(process.env.VIKA_DATASHEET_ID || "dstouAM0RMpGKD3STi");
 
+// 添加缓存
+let booksCache = {
+    data: null,
+    timestamp: 0
+};
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
 // 查询所有图书接口
 app.get('/api/books', async (req, res) => {
     try {
+        // 检查缓存是否有效
+        const now = Date.now();
+        if (booksCache.data && (now - booksCache.timestamp) < CACHE_DURATION) {
+            console.log('返回缓存数据');
+            return res.json(booksCache.data);
+        }
+
+        console.log('从维格表获取数据');
         const response = await datasheet.records.query({ 
             viewId: process.env.VIKA_VIEW_ID || "viwHrFyrUrVXC"
         });
         
         if (response.success) {
+            // 更新缓存
+            booksCache.data = response.data;
+            booksCache.timestamp = now;
             res.json(response.data);
         } else {
             res.status(500).json({ error: '获取图书列表失败' });
         }
     } catch (error) {
         console.error('Error:', error);
+        // 如果有缓存数据，在出错时返回缓存
+        if (booksCache.data) {
+            console.log('出错时返回缓存数据');
+            return res.json(booksCache.data);
+        }
         res.status(500).json({ error: '服务器错误' });
     }
 });
