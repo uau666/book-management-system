@@ -13,18 +13,18 @@ app.use(express.static(path.join(__dirname)));
 
 // 初始化 Vika SDK
 const vika = new Vika({ 
-    token: "uskFocCBUtljNHeAX5AOhRU", 
+    token: process.env.VIKA_TOKEN || "uskFocCBUtljNHeAX5AOhRU", 
     fieldKey: "name" 
 });
 
 // 指定数据表
-const datasheet = vika.datasheet("dstouAM0RMpGKD3STi");
+const datasheet = vika.datasheet(process.env.VIKA_DATASHEET_ID || "dstouAM0RMpGKD3STi");
 
 // 查询所有图书接口
 app.get('/api/books', async (req, res) => {
     try {
         const response = await datasheet.records.query({ 
-            viewId: "viwHrFyrUrVXC"
+            viewId: process.env.VIKA_VIEW_ID || "viwHrFyrUrVXC"
         });
         
         if (response.success) {
