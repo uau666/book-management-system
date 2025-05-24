@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图书管理系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .book-list {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #1e88e5;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            border-bottom: 2px solid #e3f2fd;
+            padding-bottom: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e3f2fd;
+        }
+
+        th {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+            transition: background-color 0.3s ease;
+        }
+
+        td {
+            color: #455a64;
+        }
+
+        /* 添加响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            th, td {
+                padding: 0.75rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        /* 添加加载动画 */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #1e88e5;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 搜索框样式 */
+        .search-container {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            padding-left: 2.5rem;
+            border: 2px solid #e3f2fd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #90caf9;
+            pointer-events: none;
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.8rem 1rem;
+            border: 2px solid #e3f2fd;
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: white;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        .status {
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status.available {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.borrowed {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+            
+            .search-filters {
+                width: 100%;
+            }
+            
+            .filter-select {
+                flex: 1;
+            }
+        }
+
+        /* 新增图书按钮样式 */
+        .add-book-btn {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-book-btn:hover {
+            background-color: #1565c0;
+            transform: translateY(-1px);
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 10% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e3f2fd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        .submit-btn {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: #1565c0;
+        }
+
+        .submit-btn:disabled {
+            background-color: #90caf9;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        /* 操作按钮样式 */
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .edit-btn {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .edit-btn:hover {
+            background-color: #bbdefb;
+        }
+
+        /* 表格操作列样式 */
+        .actions-cell {
+            white-space: nowrap;
+        }
+
+        /* 按钮样式 */
+        .submit-btn, .cancel-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .submit-btn {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+        }
+
+        .submit-btn:hover {
+            background-color: #1565c0;
+        }
+
+        .submit-btn:disabled {
+            background-color: #90caf9;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn {
+            background-color: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .cancel-btn:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>图书管理系统</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="book-list">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2>图书列表</h2>
+                <button class="add-book-btn" onclick="openAddBookModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    新增图书
+                </button>
+            </div>
+            
+            <!-- 添加搜索框和筛选器 -->
+            <div class="search-container">
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" class="search-input" placeholder="搜索图书名称、ID或位置...">
+                </div>
+                <div class="search-filters">
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">所有状态</option>
+                        <option value="未被借走">未被借走</option>
+                        <option value="已被借走">已被借走</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="loading" class="loading">正在加载图书数据...</div>
+            <table id="bookTable">
+                <thead>
+                    <tr>
+                        <th>图书ID</th>
+                        <th>图书名称</th>
+                        <th>状态</th>
+                        <th>位置</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="bookList">
+                    <!-- 图书列表将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+
+            <!-- 新增图书模态框 -->
+            <div id="addBookModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="closeAddBookModal()">&times;</span>
+                    <h2 style="margin-bottom: 1.5rem;">新增图书</h2>
+                    <form id="addBookForm" onsubmit="handleAddBook(event)">
+                        <div class="form-group">
+                            <label for="bookName">图书名称</label>
+                            <input type="text" id="bookName" required>
+                            <div class="error-message" id="bookNameError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookId">图书ID</label>
+                            <input type="number" id="bookId" required>
+                            <div class="error-message" id="bookIdError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookStatus">状态</label>
+                            <select id="bookStatus" required>
+                                <option value="未被借走">未被借走</option>
+                                <option value="已被借走">已被借走</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookLocation">位置</label>
+                            <input type="text" id="bookLocation" required>
+                            <div class="error-message" id="bookLocationError"></div>
+                        </div>
+                        <button type="submit" class="submit-btn" id="submitBtn">添加图书</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 编辑图书模态框 -->
+            <div id="editBookModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="closeEditBookModal()">&times;</span>
+                    <h2 style="margin-bottom: 1.5rem;">编辑图书</h2>
+                    <form id="editBookForm" onsubmit="handleEditBook(event)">
+                        <input type="hidden" id="editRecordId">
+                        <div class="form-group">
+                            <label for="editBookName">图书名称</label>
+                            <input type="text" id="editBookName" required>
+                            <div class="error-message" id="editBookNameError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editBookId">图书ID</label>
+                            <input type="number" id="editBookId" required readonly>
+                            <div class="error-message" id="editBookIdError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editBookStatus">状态</label>
+                            <select id="editBookStatus" required>
+                                <option value="未被借走">未被借走</option>
+                                <option value="已被借走">已被借走</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editBookLocation">位置</label>
+                            <input type="text" id="editBookLocation" required>
+                            <div class="error-message" id="editBookLocationError"></div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                            <button type="button" class="cancel-btn" onclick="closeEditBookModal()">取消</button>
+                            <button type="submit" class="submit-btn" id="editSubmitBtn">确定</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
